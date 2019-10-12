@@ -63,6 +63,8 @@ public class Robot extends TimedRobot {
     lB_enc = lB.getEncoder();
     rB_enc = rB.getEncoder();
 
+    
+
     //%rF.restoreFactoryDefaults(true);
     //rF.setInverted(false);
     //rF.setIdleMode(CANSparkMax.IdleMode.kBrake);
@@ -72,7 +74,7 @@ public class Robot extends TimedRobot {
     //lF.setIdleMode(CANSparkMax.IdleMode.kBrake);
 //
     //lB.restoreFactoryDefaults(true);
-    lB.setInverted(false);
+    //lB.setInverted(false);
     //lB.setIdleMode(CANSparkMax.IdleMode.kBrake);
 //
     //rB.restoreFactoryDefaults(true);
@@ -129,43 +131,16 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopPeriodic() {
 
-    if (control.getAButtonPressed()) {
-      rF_enc.setPosition(0);
-      rB_enc.setPosition(0);
-      lB_enc.setPosition(0);
-      lF_enc.setPosition(0);
-    }
-
-    if (control.getXButtonPressed()) {
-      rF_enc.setPosition(0);
-      rB_enc.setPosition(0);
-      lB_enc.setPosition(0);
-      lF_enc.setPosition(0);
-      autoForward = true;
-    }
-
-    if (rF_enc.getPosition() <= -20) {
-      autoForward = false;
-    }
-
-    if (autoForward) {
-      rF.set(-0.3);
-      rB.set(-0.3);
-      lF.set(-0.3);
-      lB.set(-0.3);
-    }
-
     double valueRX = -1*control.getRawAxis(4);
     double valueLY = control.getRawAxis(1);
     double leftSide = valueLY + valueRX;
     double rightSide = valueRX - valueLY;
-    if (!autoForward) {
-      rF.set(rightSide);
-      rB.set(rightSide);
-      lF.set(leftSide);
-      lB.set(leftSide);
-    }
 
+    rF.set(rightSide);
+    rB.set(rightSide);
+    lF.set(leftSide);
+    lB.set(leftSide);
+    
     SmartDashboard.putNumber("R", rightSide);
     SmartDashboard.putNumber("L", leftSide);
   }
