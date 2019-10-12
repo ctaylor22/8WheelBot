@@ -10,6 +10,7 @@ package frc.robot;
 import com.revrobotics.CANEncoder;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel;
+import com.revrobotics.ControlType;
 import com.revrobotics.SparkMax;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import com.revrobotics.jni.CANSparkMaxJNI;
@@ -37,7 +38,11 @@ public class Robot extends TimedRobot {
   CANSparkMax lF;
   CANSparkMax rB;
   CANSparkMax lB;
-  PIDController drivePID;
+  
+  CANPIDController rF_PID;
+  CANPIDController lF_PID;
+  CANPIDController rB_PID;
+  CANPIDController lB_PID;
 
   XboxController control;
 
@@ -46,27 +51,61 @@ public class Robot extends TimedRobot {
   CANEncoder lB_enc;
   CANEncoder rB_enc;
   boolean autoForward = false;
+
+  double DTkP = 0;
+  double DTkI = 0;
+  double DTkD = 0;
+  double DTkF = 1;
+  int DTmaxVel = 20;
+  //int DTcurrentLimit = 50;
+
   /**
    * This function is run when the robot is first started up and should be
    * used for any initialization code.
    */
   @Override
   public void robotInit() {
-    CANSparkMaxLowLevel.enableExternalUSBControl( true);
+    CANSparkMaxLowLevel.enableExternalUSBControl(true);
 
     rF = new CANSparkMax(1 , MotorType.kBrushless);
     lF = new CANSparkMax(2 , MotorType.kBrushless);
     lB = new CANSparkMax(3 , MotorType.kBrushless);
     rB = new CANSparkMax(4 , MotorType.kBrushless);
     
+    //lB.restoreFactoryDefaults(true);
+    lB.setInverted(false);
+    lB.setIdleMode(CANSparkMax.IdleMode.kBrake);
+
     rF_enc = rF.getEncoder();
     lF_enc = lF.getEncoder();
     lB_enc = lB.getEncoder();
     rB_enc = rB.getEncoder();
 
-    CANPIDController rF_PID = rF.getPIDController();
-    rF_PID.setP(0);
-    
+
+
+    rF_PID = rF.getPIDController();
+    rF_PID.setP(DTkP);
+    rF_PID.setI(DTkI);
+    rF_PID.setD(DTkD);
+    rF_PID.setFF(DTkF);
+
+    lF_PID = lF.getPIDController();
+    lF_PID.setP(DTkP);
+    lF_PID.setI(DTkI);
+    lF_PID.setD(DTkD);
+    lF_PID.setFF(DTkF);
+
+    lB_PID = lB.getPIDController();
+    lB_PID.setP(DTkP);
+    lB_PID.setI(DTkI);
+    lB_PID.setD(DTkD);
+    lB_PID.setFF(DTkF);
+
+    rB_PID = rB.getPIDController();
+    rB_PID.setP(DTkP);
+    rB_PID.setI(DTkI);
+    rB_PID.setD(DTkD);
+    rB_PID.setFF(DTkF);
 
     //%rF.restoreFactoryDefaults(true);
     //rF.setInverted(false);
@@ -76,9 +115,7 @@ public class Robot extends TimedRobot {
     //lF.setInverted(false);
     //lF.setIdleMode(CANSparkMax.IdleMode.kBrake);
 //
-    //lB.restoreFactoryDefaults(true);
-    //lB.setInverted(false);
-    //lB.setIdleMode(CANSparkMax.IdleMode.kBrake);
+    
 //
     //rB.restoreFactoryDefaults(true);
     //rB.setInverted(false);
@@ -133,17 +170,35 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void teleopPeriodic() {
+    double valueRX;
+    double valueLY;
 
-    double valueRX = -1*control.getRawAxis(4);
-    double valueLY = control.getRawAxis(1);
+    if (Math.abs(control.getRawAxis(4)) < 0.1) {
+      valueRX = 0;
+    } else {
+     valueRX = -1*control.getRawAxis(4);
+     valueRX = 0.25 * valueRX*valueRX * Math.signum(valueRX);
+    }
+
+    if (Math.abs(control.getRawAxis(1)) < 0.1) {
+      valueLY = 0;
+    } else {
+      valueLY = control.getRawAxis(1);
+      valueLY = valueLY * valueLY * Math.signum(valueLY);
+    }
     double leftSide = valueLY + valueRX;
     double rightSide = valueRX - valueLY;
 
-    rF.set(rightSide);
-    rB.set(rightSide);
-    lF.set(leftSide);
-    lB.set(leftSide);
+    //rF.set(rightSide);
+    //rB.set(rightSide);
+    //lF.set(leftSide);
+    //lB.set(leftSide);
     
+    rF_PID.setReference(rightSide * DTmaxVel, ControlType.kVelocity);
+    rB_PID.setReference(rightSide * DTmaxVel, ControlType.kVelocity);
+    lB_PID.setReference(leftSide * DTmaxVel, ControlType.kVelocity);
+    lF_PID.setReference(leftSide * DTmaxVel, ControlType.kVelocity);
+
     SmartDashboard.putNumber("R", rightSide);
     SmartDashboard.putNumber("L", leftSide);
   }
