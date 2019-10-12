@@ -13,6 +13,7 @@ import com.revrobotics.CANSparkMaxLowLevel;
 import com.revrobotics.SparkMax;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import com.revrobotics.jni.CANSparkMaxJNI;
+import com.revrobotics.CANPIDController;
 
 import edu.wpi.first.hal.sim.DriverStationSim;
 import edu.wpi.first.hal.sim.mockdata.DriverStationDataJNI;
@@ -63,6 +64,8 @@ public class Robot extends TimedRobot {
     lB_enc = lB.getEncoder();
     rB_enc = rB.getEncoder();
 
+    CANPIDController rF_PID = rF.getPIDController();
+    rF_PID.setP(0);
     
 
     //%rF.restoreFactoryDefaults(true);
