@@ -12,6 +12,7 @@ import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel;
 import com.revrobotics.ControlType;
 import com.revrobotics.SparkMax;
+import com.revrobotics.CANSparkMax.SoftLimitDirection;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import com.revrobotics.jni.CANSparkMaxJNI;
 import com.revrobotics.CANPIDController;
@@ -23,6 +24,7 @@ import edu.wpi.first.wpilibj.PIDController;
 import edu.wpi.first.wpilibj.Spark;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.GenericHID.Hand;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
@@ -52,12 +54,17 @@ public class Robot extends TimedRobot {
   CANEncoder rB_enc;
   boolean autoForward = false;
 
-  double DTkP = 0;
+  double DTkP = 0.00008;
   double DTkI = 0;
   double DTkD = 0;
-  double DTkF = 1;
-  int DTmaxVel = 20;
+  int DTmaxVel = 2000; // shgould be RPM
+  double DTkF = 0.00019; // pid_output + DTkF * reference
   //int DTcurrentLimit = 50;
+
+  /** this is to test the swerve module */
+  CANSparkMax motor_drive;
+  CANEncoder motor_drive_encoder;
+  CANPIDController motor_drive_PIDcontroller;
 
   /**
    * This function is run when the robot is first started up and should be
@@ -66,7 +73,7 @@ public class Robot extends TimedRobot {
   @Override
   public void robotInit() {
     CANSparkMaxLowLevel.enableExternalUSBControl(true);
-
+    /*
     rF = new CANSparkMax(1 , MotorType.kBrushless);
     lF = new CANSparkMax(2 , MotorType.kBrushless);
     lB = new CANSparkMax(3 , MotorType.kBrushless);
@@ -106,7 +113,7 @@ public class Robot extends TimedRobot {
     rB_PID.setI(DTkI);
     rB_PID.setD(DTkD);
     rB_PID.setFF(DTkF);
-
+*/
     //%rF.restoreFactoryDefaults(true);
     //rF.setInverted(false);
     //rF.setIdleMode(CANSparkMax.IdleMode.kBrake);
@@ -120,7 +127,25 @@ public class Robot extends TimedRobot {
     //rB.restoreFactoryDefaults(true);
     //rB.setInverted(false);
     //rB.setIdleMode(CANSparkMax.IdleMode.kBrake);
-//
+    motor_drive = new CANSparkMax(10, MotorType.kBrushless);
+    CANSparkMax motor = new CANSparkMax(99, MotorType.kBrushless);
+    //motor_drive.restoreFactoryDefaults(true);
+    motor_drive.setMotorType(MotorType.kBrushless);
+    motor_drive.setInverted(false);
+    motor_drive.setIdleMode(CANSparkMax.IdleMode.kBrake);
+    motor_drive.enableSoftLimit(SoftLimitDirection.kForward, false);
+    motor_drive.enableSoftLimit(SoftLimitDirection.kReverse, false);
+    motor_drive.enableVoltageCompensation(12);
+
+    motor_drive_encoder = motor_drive.getEncoder();
+
+    motor_drive_PIDcontroller = new CANPIDController(motor_drive);
+    motor_drive_PIDcontroller.setP(DTkP);
+    motor_drive_PIDcontroller.setI(DTkI);
+    motor_drive_PIDcontroller.setD(DTkD);
+    motor_drive_PIDcontroller.setFF(DTkF);
+  
+
     control = new XboxController(0);
   }
 
@@ -134,11 +159,20 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotPeriodic() {
+    /*
     SmartDashboard.putNumber("Right Back Encoder", rB_enc.getPosition());
     SmartDashboard.putNumber("Right Front Encoder", rF_enc.getPosition());
     SmartDashboard.putNumber("Left Back Encoder", lB_enc.getPosition());
     SmartDashboard.putNumber("Left Front Encoder", lF_enc.getPosition());
+    */
+    SmartDashboard.putNumber("Drive Velocity", motor_drive_encoder.getVelocity());
+    SmartDashboard.putNumber("Drive Velocity Conversion Factor", motor_drive_encoder.getVelocityConversionFactor());
+    SmartDashboard.putNumber("Drive % Output", motor_drive.getAppliedOutput());
 
+    SmartDashboard.putNumber("Spark Input Voltage", motor_drive.getBusVoltage());
+
+    SmartDashboard.putNumber("Joystick Left Y", control.getY(Hand.kLeft));
+    SmartDashboard.putNumber("Joystick Right X", control.getX(Hand.kRight));
   }
 
   /**
@@ -173,18 +207,18 @@ public class Robot extends TimedRobot {
     double valueRX;
     double valueLY;
 
-    if (Math.abs(control.getRawAxis(4)) < 0.1) {
+    if (Math.abs(control.getRawAxis(4)) < 0.05) {
       valueRX = 0;
     } else {
      valueRX = -1*control.getRawAxis(4);
-     valueRX = 0.25 * valueRX*valueRX * Math.signum(valueRX);
+     valueRX = 0.25 * valueRX*Math.abs(valueRX);
     }
-
-    if (Math.abs(control.getRawAxis(1)) < 0.1) {
+    
+    if (Math.abs(control.getRawAxis(1)) < 0.05) {
       valueLY = 0;
     } else {
       valueLY = control.getRawAxis(1);
-      valueLY = valueLY * valueLY * Math.signum(valueLY);
+      valueLY = valueLY * Math.abs(valueLY);
     }
     double leftSide = valueLY + valueRX;
     double rightSide = valueRX - valueLY;
@@ -194,13 +228,25 @@ public class Robot extends TimedRobot {
     //lF.set(leftSide);
     //lB.set(leftSide);
     
-    rF_PID.setReference(rightSide * DTmaxVel, ControlType.kVelocity);
-    rB_PID.setReference(rightSide * DTmaxVel, ControlType.kVelocity);
-    lB_PID.setReference(leftSide * DTmaxVel, ControlType.kVelocity);
-    lF_PID.setReference(leftSide * DTmaxVel, ControlType.kVelocity);
+    //rF_PID.setReference(rightSide * DTmaxVel, ControlType.kVelocity);
+    //rB_PID.setReference(rightSide * DTmaxVel, ControlType.kVelocity);
+    //lB_PID.setReference(leftSide * DTmaxVel, ControlType.kVelocity);
+    //lF_PID.setReference(leftSide * DTmaxVel, ControlType.kVelocity);
 
+    
+
+    /** swerve module test */
+    double target_velocity = DTmaxVel * control.getY(Hand.kLeft);
+    if (control.getRawButton(1)) {
+      motor_drive_PIDcontroller.setReference(target_velocity, ControlType.kVelocity);
+    } else {
+      motor_drive.set(control.getY(Hand.kLeft));
+    }
+    
     SmartDashboard.putNumber("R", rightSide);
     SmartDashboard.putNumber("L", leftSide);
+    SmartDashboard.putNumber("target Velocity", target_velocity);
+    
   }
 
   /**
