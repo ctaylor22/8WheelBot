@@ -36,30 +36,31 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
  * project.
  */
 public class Robot extends TimedRobot {
-  CANSparkMax rF;
-  CANSparkMax lF;
-  CANSparkMax rB;
-  CANSparkMax lB;
+  CANSparkMax spark_DT_right_1;
+  CANSparkMax spark_DT_right_2;
+  CANSparkMax spark_DT_right_3;
   
-  CANPIDController rF_PID;
-  CANPIDController lF_PID;
-  CANPIDController rB_PID;
-  CANPIDController lB_PID;
+  CANSparkMax spark_DT_left_1;
+  CANSparkMax spark_DT_left_2;
+  CANSparkMax spark_DT_left_3;
+  
+  CANPIDController spark_DT_right_PID;
+  CANPIDController spark_DT_left_PID;
 
   XboxController control;
 
-  CANEncoder rF_enc;
-  CANEncoder lF_enc;
-  CANEncoder lB_enc;
-  CANEncoder rB_enc;
+  CANEncoder spark_DT_right_1_enc;
+  CANEncoder spark_DT_left_1_enc;
+
   boolean autoForward = false;
 
-  double DTkP = 0.00008;
+  double DTkP = 0.00003;
   double DTkI = 0;
-  double DTkD = 0;
+  double DTkD = 0.00025;
   int DTmaxVel = 2000; // shgould be RPM
-  double DTkF = 0.00019; // pid_output + DTkF * reference
+  double DTkF = 0.0002; // pid_output + DTkF * reference
   //int DTcurrentLimit = 50;
+  double voltage_comp = 11;
 
   /** this is to test the swerve module */
   CANSparkMax motor_drive;
@@ -73,69 +74,80 @@ public class Robot extends TimedRobot {
   @Override
   public void robotInit() {
     CANSparkMaxLowLevel.enableExternalUSBControl(true);
-    /*
-    rF = new CANSparkMax(1 , MotorType.kBrushless);
-    lF = new CANSparkMax(2 , MotorType.kBrushless);
-    lB = new CANSparkMax(3 , MotorType.kBrushless);
-    rB = new CANSparkMax(4 , MotorType.kBrushless);
     
-    //lB.restoreFactoryDefaults(true);
-    lB.setInverted(false);
-    lB.setIdleMode(CANSparkMax.IdleMode.kBrake);
+    spark_DT_right_1 = new CANSparkMax(4, MotorType.kBrushless);
+    spark_DT_right_2 = new CANSparkMax(5, MotorType.kBrushless);
+    spark_DT_right_3 = new CANSparkMax(6, MotorType.kBrushless);
 
-    rF_enc = rF.getEncoder();
-    lF_enc = lF.getEncoder();
-    lB_enc = lB.getEncoder();
-    rB_enc = rB.getEncoder();
-
-
-
-    rF_PID = rF.getPIDController();
-    rF_PID.setP(DTkP);
-    rF_PID.setI(DTkI);
-    rF_PID.setD(DTkD);
-    rF_PID.setFF(DTkF);
-
-    lF_PID = lF.getPIDController();
-    lF_PID.setP(DTkP);
-    lF_PID.setI(DTkI);
-    lF_PID.setD(DTkD);
-    lF_PID.setFF(DTkF);
-
-    lB_PID = lB.getPIDController();
-    lB_PID.setP(DTkP);
-    lB_PID.setI(DTkI);
-    lB_PID.setD(DTkD);
-    lB_PID.setFF(DTkF);
-
-    rB_PID = rB.getPIDController();
-    rB_PID.setP(DTkP);
-    rB_PID.setI(DTkI);
-    rB_PID.setD(DTkD);
-    rB_PID.setFF(DTkF);
-*/
-    //%rF.restoreFactoryDefaults(true);
-    //rF.setInverted(false);
-    //rF.setIdleMode(CANSparkMax.IdleMode.kBrake);
-//
-    //lF.restoreFactoryDefaults(true);
-    //lF.setInverted(false);
-    //lF.setIdleMode(CANSparkMax.IdleMode.kBrake);
-//
+    spark_DT_left_1 = new CANSparkMax(1, MotorType.kBrushless);
+    spark_DT_left_2 = new CANSparkMax(2, MotorType.kBrushless);
+    spark_DT_left_3 = new CANSparkMax(3 , MotorType.kBrushless);
     
-//
-    //rB.restoreFactoryDefaults(true);
-    //rB.setInverted(false);
-    //rB.setIdleMode(CANSparkMax.IdleMode.kBrake);
+    spark_DT_left_1.setInverted(false);
+    spark_DT_left_1.setIdleMode(CANSparkMax.IdleMode.kBrake);
+    spark_DT_left_1.enableSoftLimit(SoftLimitDirection.kForward, false);
+    spark_DT_left_1.enableSoftLimit(SoftLimitDirection.kReverse, false);
+    spark_DT_left_1.enableVoltageCompensation(voltage_comp);
+
+    spark_DT_left_2.follow(spark_DT_left_1);
+    spark_DT_left_2.setInverted(false);
+    spark_DT_left_2.setIdleMode(CANSparkMax.IdleMode.kBrake);
+    spark_DT_left_2.enableSoftLimit(SoftLimitDirection.kForward, false);
+    spark_DT_left_2.enableSoftLimit(SoftLimitDirection.kReverse, false);
+    spark_DT_left_2.enableVoltageCompensation(voltage_comp);
+
+    spark_DT_left_3.follow(spark_DT_left_1);
+    spark_DT_left_3.setInverted(false);
+    spark_DT_left_3.setIdleMode(CANSparkMax.IdleMode.kBrake);
+    spark_DT_left_3.enableSoftLimit(SoftLimitDirection.kForward, false);
+    spark_DT_left_3.enableSoftLimit(SoftLimitDirection.kReverse, false);
+    spark_DT_left_3.enableVoltageCompensation(voltage_comp);
+
+    spark_DT_right_1.setInverted(false);
+    spark_DT_right_1.setIdleMode(CANSparkMax.IdleMode.kBrake);
+    spark_DT_right_1.enableSoftLimit(SoftLimitDirection.kForward, false);
+    spark_DT_right_1.enableSoftLimit(SoftLimitDirection.kReverse, false);
+    spark_DT_right_1.enableVoltageCompensation(voltage_comp);
+
+    spark_DT_right_2.follow(spark_DT_right_1);
+    spark_DT_right_2.setInverted(false);
+    spark_DT_right_2.setIdleMode(CANSparkMax.IdleMode.kBrake);
+    spark_DT_right_2.enableSoftLimit(SoftLimitDirection.kForward, false);
+    spark_DT_right_2.enableSoftLimit(SoftLimitDirection.kReverse, false);
+    spark_DT_right_2.enableVoltageCompensation(voltage_comp);
+
+    spark_DT_right_3.follow(spark_DT_right_1);
+    spark_DT_right_3.setInverted(false);
+    spark_DT_right_3.setIdleMode(CANSparkMax.IdleMode.kBrake);
+    spark_DT_right_3.enableSoftLimit(SoftLimitDirection.kForward, false);
+    spark_DT_right_3.enableSoftLimit(SoftLimitDirection.kReverse, false);
+    spark_DT_right_3.enableVoltageCompensation(voltage_comp);
+
+    spark_DT_right_1_enc = spark_DT_right_1.getEncoder();
+    spark_DT_left_1_enc = spark_DT_left_1.getEncoder();
+
+    spark_DT_right_PID = spark_DT_right_1.getPIDController();
+    spark_DT_right_PID.setP(DTkP);
+    spark_DT_right_PID.setI(DTkI);
+    spark_DT_right_PID.setD(DTkD);
+    spark_DT_right_PID.setFF(DTkF);
+
+    spark_DT_left_PID = spark_DT_left_1.getPIDController();
+    spark_DT_left_PID.setP(DTkP);
+    spark_DT_left_PID.setI(DTkI);
+    spark_DT_left_PID.setD(DTkD);
+    spark_DT_left_PID.setFF(DTkF);
+
+    /** swerve module test code */
     motor_drive = new CANSparkMax(10, MotorType.kBrushless);
-    CANSparkMax motor = new CANSparkMax(99, MotorType.kBrushless);
+    //CANSparkMax motor = new CANSparkMax(99, MotorType.kBrushless);
     //motor_drive.restoreFactoryDefaults(true);
     motor_drive.setMotorType(MotorType.kBrushless);
     motor_drive.setInverted(false);
     motor_drive.setIdleMode(CANSparkMax.IdleMode.kBrake);
     motor_drive.enableSoftLimit(SoftLimitDirection.kForward, false);
     motor_drive.enableSoftLimit(SoftLimitDirection.kReverse, false);
-    motor_drive.enableVoltageCompensation(12);
+    motor_drive.enableVoltageCompensation(11);
 
     motor_drive_encoder = motor_drive.getEncoder();
 
@@ -161,9 +173,9 @@ public class Robot extends TimedRobot {
   public void robotPeriodic() {
     /*
     SmartDashboard.putNumber("Right Back Encoder", rB_enc.getPosition());
-    SmartDashboard.putNumber("Right Front Encoder", rF_enc.getPosition());
+    SmartDashboard.putNumber("Right Front Encoder", spark_DT_right_enc.getPosition());
     SmartDashboard.putNumber("Left Back Encoder", lB_enc.getPosition());
-    SmartDashboard.putNumber("Left Front Encoder", lF_enc.getPosition());
+    SmartDashboard.putNumber("Left Front Encoder", spark_DT_left_enc.getPosition());
     */
     SmartDashboard.putNumber("Drive Velocity", motor_drive_encoder.getVelocity());
     SmartDashboard.putNumber("Drive Velocity Conversion Factor", motor_drive_encoder.getVelocityConversionFactor());
@@ -207,33 +219,35 @@ public class Robot extends TimedRobot {
     double valueRX;
     double valueLY;
 
-    if (Math.abs(control.getRawAxis(4)) < 0.05) {
+    double DTavgVel = 0.5 * (spark_DT_left_1_enc.getVelocity() + spark_DT_left_1_enc.getVelocity());
+
+    if (Math.abs(control.getRawAxis(4)) < 0.04) {
       valueRX = 0;
     } else {
-     valueRX = -1*control.getRawAxis(4);
-     valueRX = 0.25 * valueRX*Math.abs(valueRX);
+     valueRX = control.getRawAxis(4);
+     valueRX = 0.5 * valueRX*Math.abs(valueRX);
+     //valueRX = valueRX * math.abs(valueRX) * (1 - 0.25 * DTavgVel);
     }
     
-    if (Math.abs(control.getRawAxis(1)) < 0.05) {
+    if (Math.abs(control.getRawAxis(1)) < 0.04) {
       valueLY = 0;
     } else {
-      valueLY = control.getRawAxis(1);
+      valueLY = -1*control.getRawAxis(1);
       valueLY = valueLY * Math.abs(valueLY);
     }
     double leftSide = valueLY + valueRX;
-    double rightSide = valueRX - valueLY;
+    double rightSide = valueLY - valueRX;
 
-    //rF.set(rightSide);
-    //rB.set(rightSide);
-    //lF.set(leftSide);
-    //lB.set(leftSide);
-    
-    //rF_PID.setReference(rightSide * DTmaxVel, ControlType.kVelocity);
-    //rB_PID.setReference(rightSide * DTmaxVel, ControlType.kVelocity);
-    //lB_PID.setReference(leftSide * DTmaxVel, ControlType.kVelocity);
-    //lF_PID.setReference(leftSide * DTmaxVel, ControlType.kVelocity);
-
-    
+    /*
+    double target_velocity = DTmaxVel * control.getY(Hand.kLeft);
+    if (control.getRawAxis(3) > 0.75) {
+      spark_DT_left_PID.setReference(target_velocity, ControlType.kVelocity);
+      spark_DT_right_PID.setReference(target_velocity, ControlType.kVelocity);
+    } else {
+      spark_DT_left_1.set(leftSide);
+      spark_DT_right_1.set(rightSide);
+    }
+    */
 
     /** swerve module test */
     double target_velocity = DTmaxVel * control.getY(Hand.kLeft);
