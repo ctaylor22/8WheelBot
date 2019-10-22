@@ -12,6 +12,7 @@ import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel;
 import com.revrobotics.ControlType;
 import com.revrobotics.SparkMax;
+import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMax.SoftLimitDirection;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import com.revrobotics.jni.CANSparkMaxJNI;
@@ -25,6 +26,8 @@ import edu.wpi.first.wpilibj.Spark;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.GenericHID.Hand;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
@@ -57,15 +60,17 @@ public class Robot extends TimedRobot {
   double DTkP = 0.00003;
   double DTkI = 0;
   double DTkD = 0.00025;
-  int DTmaxVel = 2000; // shgould be RPM
+  int DTmaxVel = 1000; // shgould be RPM
   double DTkF = 0.0002; // pid_output + DTkF * reference
   //int DTcurrentLimit = 50;
   double voltage_comp = 11;
 
   /** this is to test the swerve module */
+  /*
   CANSparkMax motor_drive;
   CANEncoder motor_drive_encoder;
   CANPIDController motor_drive_PIDcontroller;
+  */
 
   /**
    * This function is run when the robot is first started up and should be
@@ -83,13 +88,14 @@ public class Robot extends TimedRobot {
     spark_DT_left_2 = new CANSparkMax(2, MotorType.kBrushless);
     spark_DT_left_3 = new CANSparkMax(3 , MotorType.kBrushless);
     
-    spark_DT_left_1.setInverted(false);
+    spark_DT_left_1.setInverted(true);
     spark_DT_left_1.setIdleMode(CANSparkMax.IdleMode.kBrake);
     spark_DT_left_1.enableSoftLimit(SoftLimitDirection.kForward, false);
     spark_DT_left_1.enableSoftLimit(SoftLimitDirection.kReverse, false);
     spark_DT_left_1.enableVoltageCompensation(voltage_comp);
 
     spark_DT_left_2.follow(spark_DT_left_1);
+    spark_DT_left_2.getEncoder();
     spark_DT_left_2.setInverted(false);
     spark_DT_left_2.setIdleMode(CANSparkMax.IdleMode.kBrake);
     spark_DT_left_2.enableSoftLimit(SoftLimitDirection.kForward, false);
@@ -97,6 +103,7 @@ public class Robot extends TimedRobot {
     spark_DT_left_2.enableVoltageCompensation(voltage_comp);
 
     spark_DT_left_3.follow(spark_DT_left_1);
+    spark_DT_left_3.getEncoder();
     spark_DT_left_3.setInverted(false);
     spark_DT_left_3.setIdleMode(CANSparkMax.IdleMode.kBrake);
     spark_DT_left_3.enableSoftLimit(SoftLimitDirection.kForward, false);
@@ -110,6 +117,7 @@ public class Robot extends TimedRobot {
     spark_DT_right_1.enableVoltageCompensation(voltage_comp);
 
     spark_DT_right_2.follow(spark_DT_right_1);
+    spark_DT_right_2.getEncoder();
     spark_DT_right_2.setInverted(false);
     spark_DT_right_2.setIdleMode(CANSparkMax.IdleMode.kBrake);
     spark_DT_right_2.enableSoftLimit(SoftLimitDirection.kForward, false);
@@ -117,6 +125,7 @@ public class Robot extends TimedRobot {
     spark_DT_right_2.enableVoltageCompensation(voltage_comp);
 
     spark_DT_right_3.follow(spark_DT_right_1);
+    spark_DT_right_3.getEncoder();
     spark_DT_right_3.setInverted(false);
     spark_DT_right_3.setIdleMode(CANSparkMax.IdleMode.kBrake);
     spark_DT_right_3.enableSoftLimit(SoftLimitDirection.kForward, false);
@@ -139,12 +148,13 @@ public class Robot extends TimedRobot {
     spark_DT_left_PID.setFF(DTkF);
 
     /** swerve module test code */
+    /*
     motor_drive = new CANSparkMax(10, MotorType.kBrushless);
     //CANSparkMax motor = new CANSparkMax(99, MotorType.kBrushless);
     //motor_drive.restoreFactoryDefaults(true);
     motor_drive.setMotorType(MotorType.kBrushless);
     motor_drive.setInverted(false);
-    motor_drive.setIdleMode(CANSparkMax.IdleMode.kBrake);
+    motor_drive.setIdleMode(CANSparkMax.IdleMode.kCoast);
     motor_drive.enableSoftLimit(SoftLimitDirection.kForward, false);
     motor_drive.enableSoftLimit(SoftLimitDirection.kReverse, false);
     motor_drive.enableVoltageCompensation(11);
@@ -156,7 +166,7 @@ public class Robot extends TimedRobot {
     motor_drive_PIDcontroller.setI(DTkI);
     motor_drive_PIDcontroller.setD(DTkD);
     motor_drive_PIDcontroller.setFF(DTkF);
-  
+  */
 
     control = new XboxController(0);
   }
@@ -177,11 +187,16 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("Left Back Encoder", lB_enc.getPosition());
     SmartDashboard.putNumber("Left Front Encoder", spark_DT_left_enc.getPosition());
     */
-    SmartDashboard.putNumber("Drive Velocity", motor_drive_encoder.getVelocity());
-    SmartDashboard.putNumber("Drive Velocity Conversion Factor", motor_drive_encoder.getVelocityConversionFactor());
-    SmartDashboard.putNumber("Drive % Output", motor_drive.getAppliedOutput());
+    SmartDashboard.putNumber("Drive Left 1 Velocity", spark_DT_left_1_enc.getVelocity());
+    SmartDashboard.putNumber("Drive Right 1 Velocity", spark_DT_right_1_enc.getVelocity());
+    //SmartDashboard.putNumber("Drive Velocity Conversion Factor", motor_drive_encoder.getVelocityConversionFactor());
+    SmartDashboard.putNumber("Drive Left 1 % Output", spark_DT_left_1.getAppliedOutput());
+    SmartDashboard.putNumber("Drive Right 1 % Output", spark_DT_right_1.getAppliedOutput());
 
-    SmartDashboard.putNumber("Spark Input Voltage", motor_drive.getBusVoltage());
+    SmartDashboard.putNumber("Drive Left 2 % Velocity", spark_DT_left_2.getEncoder().getVelocity());
+    SmartDashboard.putNumber("Drive left 2 % Output", spark_DT_left_2.getAppliedOutput());
+    SmartDashboard.putBoolean("left drive 2 is follower", spark_DT_left_2.isFollower());
+    //SmartDashboard.putNumber("Spark Input Voltage", motor_drive.getBusVoltage());
 
     SmartDashboard.putNumber("Joystick Left Y", control.getY(Hand.kLeft));
     SmartDashboard.putNumber("Joystick Right X", control.getX(Hand.kRight));
@@ -211,6 +226,17 @@ public class Robot extends TimedRobot {
 
   }
 
+  @Override
+  public void teleopInit() {
+    super.teleopInit();
+
+    spark_DT_left_1.setIdleMode(IdleMode.kBrake);
+    spark_DT_left_2.setIdleMode(IdleMode.kBrake);
+    spark_DT_left_3.setIdleMode(IdleMode.kBrake);
+    spark_DT_right_1.setIdleMode(IdleMode.kBrake);
+    spark_DT_right_2.setIdleMode(IdleMode.kBrake);
+    spark_DT_right_3.setIdleMode(IdleMode.kBrake);
+  }
   /**
    * This function is called periodically during operator control.
    */
@@ -238,29 +264,47 @@ public class Robot extends TimedRobot {
     double leftSide = valueLY + valueRX;
     double rightSide = valueLY - valueRX;
 
-    /*
-    double target_velocity = DTmaxVel * control.getY(Hand.kLeft);
+    
+    //double target_velocity = DTmaxVel * control.getY(Hand.kLeft);
     if (control.getRawAxis(3) > 0.75) {
-      spark_DT_left_PID.setReference(target_velocity, ControlType.kVelocity);
-      spark_DT_right_PID.setReference(target_velocity, ControlType.kVelocity);
+      spark_DT_left_PID.setReference(DTmaxVel * leftSide, ControlType.kVelocity);
+      spark_DT_right_PID.setReference(DTmaxVel * rightSide, ControlType.kVelocity);
     } else {
-      spark_DT_left_1.set(leftSide);
-      spark_DT_right_1.set(rightSide);
+      spark_DT_left_1.set(0.6* leftSide);
+      spark_DT_right_1.set(0.6*rightSide);
     }
-    */
+    
 
     /** swerve module test */
+    /*
     double target_velocity = DTmaxVel * control.getY(Hand.kLeft);
     if (control.getRawButton(1)) {
       motor_drive_PIDcontroller.setReference(target_velocity, ControlType.kVelocity);
     } else {
       motor_drive.set(control.getY(Hand.kLeft));
     }
+    */
     
     SmartDashboard.putNumber("R", rightSide);
     SmartDashboard.putNumber("L", leftSide);
-    SmartDashboard.putNumber("target Velocity", target_velocity);
+    //SmartDashboard.putNumber("target Velocity", target_velocity);
     
+  }
+
+  @Override
+  public void testInit() {
+    super.testInit();
+
+    spark_DT_left_1.setIdleMode(IdleMode.kCoast);
+    spark_DT_left_2.setIdleMode(IdleMode.kCoast);
+    spark_DT_left_3.setIdleMode(IdleMode.kCoast);
+
+    spark_DT_right_1.setIdleMode(IdleMode.kCoast);
+    spark_DT_right_2.setIdleMode(IdleMode.kCoast);
+    spark_DT_right_3.setIdleMode(IdleMode.kCoast);
+    //SmartDashboard.putNumber("Spark # to Test", 1);
+    ShuffleboardTab shuffle_testtab = Shuffleboard.getTab("Test Mode");
+    shuffle_testtab.add("Spark", 1);
   }
 
   /**
@@ -268,5 +312,38 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void testPeriodic() {
+    int spark_to_test = 1;
+    
+    CANSparkMax motor_test;
+    switch (spark_to_test) {
+      case 1:
+        motor_test = spark_DT_left_1;
+        break;
+      case 2:
+        motor_test = spark_DT_left_2;
+        break;
+      case 3:
+        motor_test = spark_DT_left_3;
+        break;
+      case 4:
+        motor_test = spark_DT_right_1;
+        break;
+      case 5:
+        motor_test = spark_DT_right_2;
+        break;
+      case 6:
+        motor_test = spark_DT_right_3;
+        break;
+      default:
+        motor_test = spark_DT_left_1;
+        break;
+    }
+
+    if (control.getAButton()) {
+      motor_test.set(control.getY(Hand.kLeft));
+    }
+    else {
+      motor_test.set(0);
+    }
   }
 }
